@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,27 +38,55 @@ import java.util.Locale
 
 
 @Composable
-fun TodoListPage() {
-    val toDoList = getFakeTodo()
+fun TodoListPage(viewModel : TodoViewModel) {
+    val todoList by viewModel.todoList.observeAsState()
+
+    var inputText by remember {
+        mutableStateOf("")
+    }
 
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .padding(18.dp)
+            .padding(16.dp)
     ) {
-        LazyColumn(
-            content = {
-                itemsIndexed(toDoList) { index: Int, item: Todo ->
-                    TodoItem(item)
-                }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            OutlinedTextField(value = inputText, onValueChange = {
+                inputText = it
+            })
+            Button(onClick = {
+                viewModel.addTodo(inputText)
+                inputText = ""
+            }) {
+                Text(text = "Add")
             }
+        }
+
+        todoList?.let {
+            LazyColumn(
+                content = {
+                    itemsIndexed(it) { index: Int, item: Todo ->
+                        TodoItem(item, onDelete = {
+                            viewModel.deleteTodo(item.id)
+                        })
+                    }
+                }
+            )
+        }?: Text(
+            text = "No items yet",
+            modifier = Modifier.fillMaxWidth(),
+            fontSize = 16.sp,
+            textAlign = TextAlign.Center
         )
 
     }
 }
 
 @Composable
-fun TodoItem(item : Todo) {
+fun TodoItem(item : Todo, onDelete: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -82,7 +111,7 @@ fun TodoItem(item : Todo) {
                 color = Color.White
             )
         }
-        IconButton(onClick = {}) {
+        IconButton(onClick = onDelete) {
             Icon(
                 painter = painterResource(id = R.drawable.baseline_delete_24),
                 contentDescription = "Delete",
